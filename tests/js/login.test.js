@@ -25,24 +25,37 @@ check("the cursor stays in the field", d.activeElement === field);
 toggle.click();
 check("„Скрий“ hides it again", field.type === "password" && toggle.textContent === "Покажи");
 
-function key(type, capsOn, target) {
-    const e = type === "mousedown" ? new w.MouseEvent(type, { bubbles: true }) : new w.KeyboardEvent(type, { key: "a", bubbles: true });
-    e.getModifierState = (name) => name === "CapsLock" && capsOn;
-    (target || field).dispatchEvent(e);
+// state = what the browser reports for Caps Lock (null: like the user's PC, it reports nothing)
+function key(type, k, { shift = false, state = null, target = field } = {}) {
+    const e = type === "mousedown" ? new w.MouseEvent(type, { bubbles: true, shiftKey: shift })
+        : new w.KeyboardEvent(type, { key: k, shiftKey: shift, bubbles: true });
+    e.getModifierState = (name) => name === "CapsLock" && state === true;
+    target.dispatchEvent(e);
 }
 const username = d.querySelector("input[name=username]");
 check("no Caps Lock warning at first", caps.hidden);
-key("keydown", true);
-check("Caps Lock on, typing the password: warning", !caps.hidden);
-key("keyup", false);
-check("Caps Lock off: warning gone", caps.hidden);
-key("keydown", true, username);
-check("Caps Lock on while typing the login name (the cursor starts there): warning", !caps.hidden);
-key("keyup", false, username);
-check("off again: gone", caps.hidden);
-key("mousedown", true, d.body);
-check("a click with Caps Lock on: warning", !caps.hidden);
-key("keydown", false);
+for (const k of "SDA") key("keydown", k, { target: username });
+check("„SDA“ typed without Shift in the login name, nothing reported: warning", !caps.hidden);
+key("keydown", "s", { target: username });
+check("a small letter without Shift: gone", caps.hidden);
+key("keydown", "a", { shift: true });
+check("a small letter with Shift (Caps Lock + Shift): warning", !caps.hidden);
+key("keydown", "A", { shift: true });
+check("a capital with Shift: no warning", caps.hidden);
+key("keydown", "Ж");
+check("Cyrillic capital without Shift: warning", !caps.hidden);
+key("keydown", "7");
+key("keydown", "Backspace");
+check("digits and other keys change nothing", !caps.hidden);
+key("keydown", "ж");
+check("Cyrillic small: gone", caps.hidden);
+key("keyup", "CapsLock", { state: true });
+check("the Caps Lock key, reported on: warning at once", !caps.hidden);
+key("keyup", "CapsLock", { state: false });
+check("the Caps Lock key, reported off: gone", caps.hidden);
+key("mousedown", "", { state: true, target: d.body });
+check("a click, reported on: warning", !caps.hidden);
+key("keydown", "a");
 
 toggle.click();
 field.form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }));

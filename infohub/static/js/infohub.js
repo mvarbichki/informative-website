@@ -129,9 +129,11 @@ window.addEventListener("pageshow", function () {
 });
 
 // Login page: „Покажи“ shows the typed password (the printed passwords are easy to mistype) and a
-// warning appears while Caps Lock is on: on any key or click on the page, also while typing the
-// login name (the cursor starts there). On sending, the field is a password field again, so the
-// browser's password manager treats it as one.
+// warning appears while Caps Lock is on, also while typing the login name (the cursor starts there).
+// Not every browser/keyboard reports the Caps Lock state (VM 2026-10-31: no warning), so a typed
+// letter decides: a capital without Shift, or a small one with Shift, means Caps Lock is on (Latin
+// and Cyrillic). The reported state is used for the Caps Lock key itself and for clicks.
+// On sending, the field is a password field again, so the browser's password manager treats it as one.
 (function () {
     var toggle = document.querySelector("[data-password-toggle]");
     if (!toggle) return;
@@ -148,7 +150,14 @@ window.addEventListener("pageshow", function () {
         field.focus();
     });
     function capsLock(event) {
-        if (event.getModifierState) caps.hidden = !event.getModifierState("CapsLock");
+        var key = event.key || "";
+        if (key.length === 1 && key.toLowerCase() !== key.toUpperCase()) {  // a letter
+            if (event.type === "keydown") caps.hidden = (key === key.toUpperCase()) === Boolean(event.shiftKey);
+            return;
+        }
+        if ((key === "CapsLock" || event.type === "mousedown") && event.getModifierState) {
+            caps.hidden = !event.getModifierState("CapsLock");
+        }
     }
     ["keydown", "keyup", "mousedown"].forEach(function (type) { document.addEventListener(type, capsLock); });
     field.form.addEventListener("submit", function () { show(false); });
