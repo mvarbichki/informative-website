@@ -25,19 +25,24 @@ check("the cursor stays in the field", d.activeElement === field);
 toggle.click();
 check("„Скрий“ hides it again", field.type === "password" && toggle.textContent === "Покажи");
 
-function key(type, capsOn) {
-    const e = new w.KeyboardEvent(type, { key: "a", bubbles: true });
+function key(type, capsOn, target) {
+    const e = type === "mousedown" ? new w.MouseEvent(type, { bubbles: true }) : new w.KeyboardEvent(type, { key: "a", bubbles: true });
     e.getModifierState = (name) => name === "CapsLock" && capsOn;
-    field.dispatchEvent(e);
+    (target || field).dispatchEvent(e);
 }
+const username = d.querySelector("input[name=username]");
 check("no Caps Lock warning at first", caps.hidden);
 key("keydown", true);
-check("Caps Lock on: warning", !caps.hidden);
+check("Caps Lock on, typing the password: warning", !caps.hidden);
 key("keyup", false);
 check("Caps Lock off: warning gone", caps.hidden);
-key("keydown", true);
-field.dispatchEvent(new w.Event("blur"));
-check("leaving the field hides the warning", caps.hidden);
+key("keydown", true, username);
+check("Caps Lock on while typing the login name (the cursor starts there): warning", !caps.hidden);
+key("keyup", false, username);
+check("off again: gone", caps.hidden);
+key("mousedown", true, d.body);
+check("a click with Caps Lock on: warning", !caps.hidden);
+key("keydown", false);
 
 toggle.click();
 field.form.dispatchEvent(new w.Event("submit", { bubbles: true, cancelable: true }));

@@ -129,7 +129,8 @@ window.addEventListener("pageshow", function () {
 });
 
 // Login page: „Покажи“ shows the typed password (the printed passwords are easy to mistype) and a
-// warning appears while Caps Lock is on. On sending, the field is a password field again, so the
+// warning appears while Caps Lock is on: on any key or click on the page, also while typing the
+// login name (the cursor starts there). On sending, the field is a password field again, so the
 // browser's password manager treats it as one.
 (function () {
     var toggle = document.querySelector("[data-password-toggle]");
@@ -149,8 +150,6 @@ window.addEventListener("pageshow", function () {
     function capsLock(event) {
         if (event.getModifierState) caps.hidden = !event.getModifierState("CapsLock");
     }
-    field.addEventListener("keydown", capsLock);
-    field.addEventListener("keyup", capsLock);
-    field.addEventListener("blur", function () { caps.hidden = true; });
+    ["keydown", "keyup", "mousedown"].forEach(function (type) { document.addEventListener(type, capsLock); });
     field.form.addEventListener("submit", function () { show(false); });
 })();
